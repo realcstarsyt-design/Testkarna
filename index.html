@@ -1,40 +1,56 @@
 <!doctype html>
-
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Timing Test — Simple Index</title>
+  <meta charset="utf-8">
+  <title>Task / Verify Demo</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;max-width:900px;margin:20px auto;padding:12px}
-    button{padding:8px 12px;margin:6px;border-radius:8px;border:1px solid #ddd;background:#fff}
-    input{padding:6px;margin-left:6px}
-    pre{background:#f7f7f8;padding:10px;border-radius:8px;overflow:auto}
-    .row{display:flex;gap:8px;align-items:center;margin-top:8px}
-    .muted{color:#666;font-size:0.9em}
+    body { font-family: sans-serif; text-align:center; margin-top:50px; }
+    button { font-size:18px; padding:10px 20px; margin:10px; }
+    #verifyBtn { display:none; }
+    #timer { font-size:20px; margin-top:20px; }
   </style>
 </head>
 <body>
-  <h1>Simple Timing Test — index.html</h1>
-  <p class="muted">This static page includes quick buttons to call your friend's site endpoints. For learning/testing only.</p><label>Target base URL: <input id="baseUrl" value="https://streamfiles.eu.org" style="width:380px" /> </label>
+  <h1>Task → Verify Demo</h1>
 
-  <div class="row">
-    <button id="openTask">Open <code>task.php</code></button>
-    <button id="openVerify">Open <code>verify.php</code></button>
-    <button id="openBoth">Open task → verify (5s)</button>
-  </div>  <div class="row" style="margin-top:6px">
-    <label>Custom wait (seconds): <input id="waitSec" value="5" style="width:80px" /></label>
-    <button id="runWait">Start wait then verify</button>
-  </div>  <h3>Status</h3>
-  <div id="status">Idle</div>  <h3>Log</h3>
-  <pre id="log">Ready</pre><script>
-(function(){
-  const baseEl = document.getElementById('baseUrl');
-  const logEl = document.getElementById('log');
-  const statusEl = document.getElementById('status');
+  <button id="taskBtn">Start Task</button>
+  <button id="verifyBtn">Verify</button>
 
-  function now(){return new Date().toLocaleTimeString();}
-  function appendLog(...parts){
+  <div id="timer">Timer: 0s</div>
+
+<script>
+let startTime = null;
+let timerInterval = null;
+
+// Open task.php
+document.getElementById('taskBtn').addEventListener('click', () => {
+  window.open("https://streamfiles.eu.org/task.php", "_blank");
+  startTime = Date.now();
+  document.getElementById('timer').textContent = "Timer started...";
+  runFakeTimer();
+});
+
+// Fake timer: 100s compressed into 10s
+function runFakeTimer(){
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    let elapsed = (Date.now() - startTime)/1000; // real seconds
+    let fakeElapsed = elapsed * 10; // speed ×10
+    document.getElementById('timer').textContent = "Timer: " + fakeElapsed.toFixed(1) + "s (fake)";
+    if(fakeElapsed >= 100){
+      clearInterval(timerInterval);
+      document.getElementById('verifyBtn').style.display = "inline-block";
+    }
+  }, 500);
+}
+
+// Verify button → open verify.php
+document.getElementById('verifyBtn').addEventListener('click', () => {
+  window.open("https://streamfiles.eu.org/verify.php", "_blank");
+});
+</script>
+</body>
+</html>  function appendLog(...parts){
     logEl.textContent = `${now()} — ${parts.join(' ')}\n` + logEl.textContent;
   }
 
