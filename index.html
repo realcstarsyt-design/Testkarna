@@ -1,0 +1,90 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Timing Test — Simple Index</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;max-width:900px;margin:20px auto;padding:12px}
+    button{padding:8px 12px;margin:6px;border-radius:8px;border:1px solid #ddd;background:#fff}
+    input{padding:6px;margin-left:6px}
+    pre{background:#f7f7f8;padding:10px;border-radius:8px;overflow:auto}
+    .row{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .muted{color:#666;font-size:0.9em}
+  </style>
+</head>
+<body>
+  <h1>Simple Timing Test — index.html</h1>
+  <p class="muted">This static page includes quick buttons to call your friend's site endpoints. For learning/testing only.</p><label>Target base URL: <input id="baseUrl" value="https://streamfiles.eu.org" style="width:380px" /> </label>
+
+  <div class="row">
+    <button id="openTask">Open <code>task.php</code></button>
+    <button id="openVerify">Open <code>verify.php</code></button>
+    <button id="openBoth">Open task → verify (5s)</button>
+  </div>  <div class="row" style="margin-top:6px">
+    <label>Custom wait (seconds): <input id="waitSec" value="5" style="width:80px" /></label>
+    <button id="runWait">Start wait then verify</button>
+  </div>  <h3>Status</h3>
+  <div id="status">Idle</div>  <h3>Log</h3>
+  <pre id="log">Ready</pre><script>
+(function(){
+  const baseEl = document.getElementById('baseUrl');
+  const logEl = document.getElementById('log');
+  const statusEl = document.getElementById('status');
+
+  function now(){return new Date().toLocaleTimeString();}
+  function appendLog(...parts){
+    logEl.textContent = `${now()} — ${parts.join(' ')}\n` + logEl.textContent;
+  }
+
+  async function doGet(path){
+    const url = baseEl.value.replace(/\/+$/,'') + '/' + path.replace(/^\/+/, '');
+    appendLog('[fetch]', url);
+    statusEl.textContent = `Fetching ${path} ...`;
+    try{
+      const res = await fetch(url, {method:'GET', credentials:'include'});
+      const txt = await res.text();
+      appendLog(`[resp ${res.status}] ${path} (len=${txt.length})`);
+      statusEl.textContent = `Fetched ${path} — ${res.status}`;
+      return {ok:res.ok, status:res.status, text: txt};
+    }catch(err){
+      appendLog('[error]', err.toString());
+      statusEl.textContent = 'Fetch error';
+      return {ok:false, status:0, text: String(err)};
+    }
+  }
+
+  document.getElementById('openTask').addEventListener('click', async ()=>{
+    appendLog('Opening task.php');
+    const r = await doGet('task.php');
+    if(r.text) appendLog('snippet:', r.text.slice(0,200).replace(/\n/g,' '));
+  });
+
+  document.getElementById('openVerify').addEventListener('click', async ()=>{
+    appendLog('Opening verify.php');
+    const r = await doGet('verify.php');
+    if(r.text) appendLog('snippet:', r.text.slice(0,300).replace(/\n/g,' '));
+  });
+
+  document.getElementById('openBoth').addEventListener('click', async ()=>{
+    appendLog('Open task → wait 5s → verify');
+    await doGet('task.php');
+    await new Promise(r=>setTimeout(r,5000));
+    await doGet('verify.php');
+  });
+
+  document.getElementById('runWait').addEventListener('click', async ()=>{
+    let s = parseFloat(document.getElementById('waitSec').value || '0');
+    if(isNaN(s) || s < 0) { alert('Enter positive seconds'); return; }
+    appendLog(`Open task → wait ${s}s → verify`);
+    await doGet('task.php');
+    appendLog(`Waiting ${s}s...`);
+    await new Promise(r=>setTimeout(r, Math.round(s*1000)));
+    await doGet('verify.php');
+  });
+
+})();
+</script><p class="muted">Notes: If target site is cross-origin, the browser will only send cookies if the target sets CORS headers and allows credentials. Use local testing (same origin) to avoid CORS issues.</p>
+</body>
+</html>
